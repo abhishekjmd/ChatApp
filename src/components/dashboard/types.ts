@@ -1,4 +1,4 @@
-﻿export type NavItem = {
+export type NavItem = {
   id: string;
   label: string;
   icon: IconName;
@@ -22,21 +22,24 @@ export type IconName =
   | "mood"
   | "send";
 
-export type Conversation = {
+export type SidebarUser = {
   id: string;
   name: string;
+  email: string;
   avatar: string;
-  preview: string;
-  time: string;
-  active?: boolean;
-  unreadCount?: number;
-  online?: boolean;
+  conversationId: string;
+  lastMessagePreview: string;
+  lastMessageTime: number;
+  unreadCount: number;
+  isOnline: boolean;
 };
 
-export type ChatMessage = {
+export type DirectoryUser = {
   id: string;
-  author: "self" | "other";
-  text: string;
-  time: string;
-  avatar?: string;
+  name: string;
+  email: string;
+  avatar: string;
+  isCurrentUser: boolean;
+  isOnline: boolean;
+  conversationId?: string;
 };

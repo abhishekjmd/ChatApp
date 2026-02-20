@@ -1,18 +1,14 @@
-﻿import { v } from "convex/values";
+import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-
-const DEFAULT_CONVERSATION_ID = "general";
 
 export const list = query({
   args: {
-    conversationId: v.optional(v.string()),
+    conversationId: v.string(),
   },
   handler: async (ctx, args) => {
-    const conversationId = args.conversationId ?? DEFAULT_CONVERSATION_ID;
-
     const messages = await ctx.db
       .query("messages")
-      .withIndex("by_conversation", (q) => q.eq("conversationId", conversationId))
+      .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
       .order("asc")
       .collect();
 
@@ -23,7 +19,8 @@ export const list = query({
 export const send = mutation({
   args: {
     body: v.string(),
-    conversationId: v.optional(v.string()),
+    conversationId: v.string(),
+    recipientId: v.string(),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -54,7 +51,46 @@ export const send = mutation({
       senderId: identity.subject,
       senderName,
       senderAvatar,
-      conversationId: args.conversationId ?? DEFAULT_CONVERSATION_ID,
+      recipientId: args.recipientId,
+      conversationId: args.conversationId,
+      readBy: [identity.subject],
     });
+  },
+});
+
+export const markAsRead = mutation({
+  args: {
+    conversationId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Unauthorized");
+    }
+
+    const messages = await ctx.db
+      .query("messages")
+      .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
+      .collect();
+
+    let patched = 0;
+
+    for (const message of messages) {
+      if (message.recipientId !== identity.subject) {
+        continue;
+      }
+
+      if (message.readBy.includes(identity.subject)) {
+        continue;
+      }
+
+      await ctx.db.patch(message._id, {
+        readBy: [...message.readBy, identity.subject],
+      });
+      patched += 1;
+    }
+
+    return patched;
   },
 });

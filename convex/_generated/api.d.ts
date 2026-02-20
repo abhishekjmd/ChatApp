@@ -9,6 +9,8 @@
  */
 
 import type * as messages from "../messages.js";
+import type * as typing from "../typing.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -18,6 +20,8 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   messages: typeof messages;
+  typing: typeof typing;
+  users: typeof users;
 }>;
 
 /**

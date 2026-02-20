@@ -1,4 +1,4 @@
-﻿import { SignOutButton } from "@clerk/nextjs";
+import { SignOutButton } from "@clerk/nextjs";
 import { leftNavItems } from "./data";
 import { SymbolIcon } from "./SymbolIcon";
 
@@ -7,9 +7,11 @@ type LeftRailProps = {
     name: string;
     imageUrl: string;
   };
+  activeNav: string;
+  onSelectNav: (navId: string) => void;
 };
 
-export function LeftRail({ user }: LeftRailProps) {
+export function LeftRail({ user, activeNav, onSelectNav }: LeftRailProps) {
   return (
     <aside className="hidden w-16 shrink-0 flex-col items-center border-r border-slate-800 bg-slate-900 py-4 lg:flex">
       <div className="mb-8">
@@ -24,7 +26,12 @@ export function LeftRail({ user }: LeftRailProps) {
             key={item.id}
             type="button"
             aria-label={item.label}
-            className={item.active ? "rounded-lg bg-emerald-500/10 p-2 text-emerald-500" : "p-2 text-slate-400 transition-colors hover:text-white"}
+            onClick={() => onSelectNav(item.id)}
+            className={
+              activeNav === item.id
+                ? "rounded-lg bg-emerald-500/10 p-2 text-emerald-500"
+                : "p-2 text-slate-400 transition-colors hover:text-white"
+            }
           >
             <SymbolIcon name={item.icon} className="h-5 w-5" />
           </button>
