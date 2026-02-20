@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ChatApp Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#10b77f",
+                        "background-light": "#f6f8f7",
+                        "background-dark": "#0F172A", // Deep Dark for main window
+                        "sidebar-dark": "#1E293B",    // Slate Dark for list
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="flex h-screen overflow-hidden">
+<!-- Left Navigation Bar (Narrow) -->
+<aside class="w-16 flex flex-col items-center py-4 bg-slate-900 border-r border-slate-800 shrink-0">
+<div class="mb-8">
+<div class="size-10 bg-primary rounded-xl flex items-center justify-center text-slate-900">
+<span class="material-symbols-outlined font-bold">chat</span>
+</div>
+</div>
+<nav class="flex flex-col gap-6 flex-1">
+<button class="p-2 text-primary bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined">forum</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">call</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">person</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">star</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">archive</span>
+</button>
+</nav>
+<div class="flex flex-col gap-6 pb-4">
+<button class="p-2 text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="size-10 rounded-full bg-slate-700 border-2 border-primary overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="User profile avatar smiling" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCC1u3DdEjTQeawPumAmmDHrEnn_BB14Lih45uKqcABRPhCaqyF9lwXF9B9GQB4cayBWAg4Ja0rbNcDwDi8pokqmcLJ1lsuir9cuGe40OjQK_FOCZ87PPMuCBt7DIww7ujPf_YOz9aTK1Zcbq1gAgsmVtxpR8tH6_4hf1iYMo5kgVxogan7bK9MBS4zdx6bwdfZqBpq1Y4uwMgxuZ71ps7kA4sFXXaguZKvvA5L7b6vbQ10Y_bvKa8oqTwE0DrCScxR_vljnytwQPwU"/>
+</div>
+</div>
+</aside>
+<!-- Conversation List Sidebar -->
+<section class="w-80 flex flex-col bg-sidebar-dark shrink-0 border-r border-slate-800">
+<div class="p-4 border-b border-slate-700">
+<h1 class="text-xl font-bold mb-4">Messages</h1>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-sm">search</span>
+<input class="w-full bg-slate-900 border-none rounded-lg pl-10 py-2 text-sm focus:ring-1 focus:ring-primary placeholder-slate-500" placeholder="Search conversations..." type="text"/>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar">
+<!-- Active Chat -->
+<div class="flex items-center gap-3 p-4 bg-slate-800/50 border-l-4 border-primary cursor-pointer transition-colors">
+<div class="relative shrink-0">
+<img class="size-12 rounded-full object-cover" data-alt="Alice Smith portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJLPF_eBGqUU4FRuTA2c2xoxNoC5OlTwkqOlKxjlfy1dLn52hT_Qj1Xr95yFsJYU_c1g7Dq2NQ1LyI3qZ2nn6uig1Rf_VfQxE_Vsrf-4gSp1WwVS4ttM-MqYwG3JJGVJAnl6H1Gnv41_bVcrUsS-Ho6c8fKsHU_f6LOpZgSqPcZh8PglWacXHZ9RobFrGtjMZZzT8RBibWMax-7sWqbMrfG37gAgN5efypKzhIty1d1ONFrsLk2BwNVy76CQQR7GNqFl7egTxoWfPv"/>
+<div class="absolute bottom-0 right-0 size-3 bg-primary rounded-full border-2 border-sidebar-dark"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<h3 class="text-sm font-semibold truncate">Alice Smith</h3>
+<span class="text-[10px] text-slate-400">10:45 AM</span>
+</div>
+<p class="text-xs text-slate-400 truncate">See you at the meeting!</p>
+</div>
+</div>
+<!-- Unread Chat -->
+<div class="flex items-center gap-3 p-4 hover:bg-slate-800 transition-colors cursor-pointer">
+<div class="relative shrink-0">
+<img class="size-12 rounded-full object-cover" data-alt="Design Group avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAc3SC4d1ijqkzj8VhLzE5UGOzKABX4ohUbCNQ4Sey9v9frMeEhOZONBGRZVIu3gIt0Z0Ji-XvF5MudXETlIgbGv4UETtLXEeSf14rRpdcHWfiiCsUnXJCIJmXNHS7Q-5Pk3nE4qBeSuVrJac1uBomtChXXsTk91Ixemm1mkgoJU-Z9gYhsH3saPb2PWncFlENH-_b0iCGGfNXEwLFvls81cv1q71YeKYfK-4lIlGC7ikC7DZKLFh60lRMRgMpS3SaSxou3iGAxElTe"/>
+<div class="absolute bottom-0 right-0 size-3 bg-slate-500 rounded-full border-2 border-sidebar-dark"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<h3 class="text-sm font-semibold truncate">Design Group</h3>
+<span class="text-[10px] text-primary">Just now</span>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-xs text-slate-100 font-medium truncate">Bob: The new UI looks great!</p>
+<span class="bg-primary text-slate-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full">2</span>
+</div>
+</div>
+</div>
+<!-- Other Chats -->
+<div class="flex items-center gap-3 p-4 hover:bg-slate-800 transition-colors cursor-pointer opacity-80">
+<div class="relative shrink-0">
+<img class="size-12 rounded-full object-cover" data-alt="John Doe portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMpGM6jmKcLhyo8mmrtUbju4wjV12nffECyJagEIZzx5R6LeUDUAJplT1eZzhb4Jy98b9UF5tOZ-5sovfV3NXo81cFqU5jnB3ia2fAETANCAdMTGMzaZJxcp-eo_my9AS3lq0ifYhiv3LKpCaJt4-MnS5FE8-GjIonAbw7fZEO__IXUbZfLenoygRK_mIEX7j939c7Fjt_bezN0PHFb6Wx_ks-e4AOj7Z6-HwqykI6gESMVRbx1yWGTHmJ3czMLl_OEWTBh9cbGyBG"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<h3 class="text-sm font-semibold truncate">John Doe</h3>
+<span class="text-[10px] text-slate-400">Yesterday</span>
+</div>
+<p class="text-xs text-slate-400 truncate">Sent a photo</p>
+</div>
+</div>
+<div class="flex items-center gap-3 p-4 hover:bg-slate-800 transition-colors cursor-pointer opacity-80">
+<div class="relative shrink-0">
+<img class="size-12 rounded-full object-cover" data-alt="Sarah Wilson portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuACSphT5zAXHLATvj3FslYSmlICk2HO8zVyyvCiDiLpp_oN_6_CYPghIjfzr4y5NaRzkvJZzgRLTtdl5zMWqcxpcw0Q3nBuTnn2CB-zW7mK64Dy079IrH6hjpaL3XRAoGY9sYkZ_FqeB_dw1ozisobzSbPPQimTgpxF0eMFKMz0va1bAgaL19e0cD5N_DVRPawCqw-3_NYzi1kKa6XQmRTTzjb79Fl42TyM9l9-XFE1xmx0rzA-4Ife7kspkzucr08Urx21UQBsZM3x"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<h3 class="text-sm font-semibold truncate">Sarah Wilson</h3>
+<span class="text-[10px] text-slate-400">Monday</span>
+</div>
+<p class="text-xs text-slate-400 truncate">Let's catch up soon!</p>
+</div>
+</div>
+<div class="flex items-center gap-3 p-4 hover:bg-slate-800 transition-colors cursor-pointer opacity-80">
+<div class="relative shrink-0">
+<img class="size-12 rounded-full object-cover" data-alt="Michael Scott portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVFw2PM2SFQiGkj2NuSCNX6MClYmmba8lAPAHwjh26X1HTubF4NK1s2SIGsCV-o23QZZDGaXLV4jRY4JWtc06dbimP2kzVtbJ5LXm9dMKtB9MowSULbndi7n7ZV9WSgurDfoB7rowQZCokdGBo_tkDcDyVJKNnIJRUUAatHHnVakPpdnsuGSQz2xoD9_tqoEUCcL1QncHWAk9pOJxlwMBOhnHFT3AIzeLrpeYzOgQdYDqSTm43B2OTjf6XkPckPDax-Y583aBL5YCQ"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<h3 class="text-sm font-semibold truncate">Michael Scott</h3>
+<span class="text-[10px] text-slate-400">Sunday</span>
+</div>
+<p class="text-xs text-slate-400 truncate">That's what she said!</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Main Chat Window -->
+<main class="flex-1 flex flex-col bg-background-dark overflow-hidden">
+<!-- Chat Header -->
+<header class="h-16 flex items-center justify-between px-6 bg-slate-900/50 backdrop-blur-md border-b border-slate-800 shrink-0">
+<div class="flex items-center gap-3">
+<img class="size-10 rounded-full object-cover" data-alt="Alice Smith portrait small" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQ23GPfi-gSXzR2ZXMffe-ArgQEtk0j_zCSjABAYytIjgphX_0P-077GGd_kr-XN2PjJoP-W9_raEvba23I1cITIzcQ_T4JSuo_R_e0zMo9QkFS7hnWjEoe6SU1Cy77OvovJe7RCBFmx7JCVPVYQca723fvH2zchH-6Yp45xtXV1Gf10is_jAY-tkdjAwJhKjleAtz8oC2MKBxKK66kkHvsLMUGOmB2Iqdmjz4iCJmPnRgL0GdQIYJLf9Hqn92QTRHTA79-jC_FvPv"/>
+<div>
+<h2 class="text-sm font-bold">Alice Smith</h2>
+<p class="text-[11px] text-primary flex items-center gap-1">
+<span class="size-1.5 bg-primary rounded-full"></span> Active Now
+                    </p>
+</div>
+</div>
+<div class="flex items-center gap-4 text-slate-400">
+<button class="hover:text-white"><span class="material-symbols-outlined">videocam</span></button>
+<button class="hover:text-white"><span class="material-symbols-outlined">call</span></button>
+<button class="hover:text-white"><span class="material-symbols-outlined">search</span></button>
+<button class="hover:text-white"><span class="material-symbols-outlined">more_vert</span></button>
+</div>
+</header>
+<!-- Message Area -->
+<div class="flex-1 overflow-y-auto p-6 flex flex-col gap-6 custom-scrollbar">
+<div class="flex justify-center">
+<span class="text-[10px] uppercase tracking-widest text-slate-500 bg-slate-800/50 px-3 py-1 rounded-full">Today</span>
+</div>
+<!-- Received Message -->
+<div class="flex gap-3 max-w-[80%]">
+<img class="size-8 rounded-full object-cover shrink-0 mt-auto" data-alt="Alice profile picture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBOCUqJoDc26UYmauaj0aKE1-mAJhsig3hlTmPVJdf8Aa0GyNtrWbXnE8rYlDqRLrcVgw-DtwGj4fuYiuzEvFb_THspBdsgmqDa6uMY9WdwvNXTXgZppbCeNsYp493n9ODPiKKly-hOptEknFl17-_-1UlsQslwbSf7nEnhJdKTjxvX6EV6AS6xEwch0LtAagjez96_PVMk0KDM9KiBIKK_CMQCzprlhjO4U6xNi_SsSuuuKPdzcd0yhsTOu6Tf6j-zRFIbqPpWYM1C"/>
+<div class="flex flex-col gap-1">
+<div class="bg-sidebar-dark text-white p-3 rounded-2xl rounded-bl-none shadow-sm">
+<p class="text-sm">Hey! Did you have a chance to look at the new UI designs for the dashboard?</p>
+</div>
+<span class="text-[10px] text-slate-500 ml-1">10:40 AM</span>
+</div>
+</div>
+<!-- Sent Message -->
+<div class="flex flex-col items-end gap-1 ml-auto max-w-[80%]">
+<div class="bg-primary text-slate-900 p-3 rounded-2xl rounded-br-none shadow-lg">
+<p class="text-sm font-medium">Yes, I just finished reviewing them. They look incredibly clean! The dark mode transition is seamless.</p>
+</div>
+<div class="flex items-center gap-1 mr-1">
+<span class="text-[10px] text-slate-500">10:42 AM</span>
+<span class="material-symbols-outlined text-[14px] text-primary">done_all</span>
+</div>
+</div>
+<!-- Received Message -->
+<div class="flex gap-3 max-w-[80%]">
+<img class="size-8 rounded-full object-cover shrink-0 mt-auto" data-alt="Alice profile picture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDB9FXgFpjQ9OO9uPXU5kTaFbqwvOTur1rhKX74IVqPyUTjA1QF09PmmWG85rhF051Lo8WQzvry1GGZKrP8oi0h4HjkZJbC8TqtNOszMkqtkRfGOg3bO9DjYHQ4iqul2e4606IN0jZoTdriLdrTSCzEQW9yWUfNrQGW620o0iX1KAeKeWCpmj7nzuU_inM7qc_WKSu-HKI0dE7_ixUhdJGPm3bCD_gh_M0WgVLF9ER2tY0O2Eqw0lQMjZpAGrK-cohX7EGETJYVrth1"/>
+<div class="flex flex-col gap-1">
+<div class="bg-sidebar-dark text-white p-3 rounded-2xl rounded-bl-none shadow-sm">
+<p class="text-sm">Glad you liked it! See you at the meeting!</p>
+</div>
+<span class="text-[10px] text-slate-500 ml-1">10:45 AM</span>
+</div>
+</div>
+<!-- Sent Message -->
+<div class="flex flex-col items-end gap-1 ml-auto max-w-[80%]">
+<div class="bg-primary text-slate-900 p-3 rounded-2xl rounded-br-none shadow-lg">
+<p class="text-sm font-medium">Perfect, I'll be there with the feedback notes. 🚀</p>
+</div>
+<div class="flex items-center gap-1 mr-1">
+<span class="text-[10px] text-slate-500">10:46 AM</span>
+<span class="material-symbols-outlined text-[14px] text-primary">done_all</span>
+</div>
+</div>
+</div>
+<!-- Chat Input -->
+<div class="p-4 bg-slate-900 border-t border-slate-800">
+<div class="max-w-4xl mx-auto flex items-center gap-4">
+<div class="flex gap-2">
+<button class="text-slate-400 hover:text-white p-2">
+<span class="material-symbols-outlined">add_circle</span>
+</button>
+<button class="text-slate-400 hover:text-white p-2">
+<span class="material-symbols-outlined">image</span>
+</button>
+</div>
+<div class="flex-1 relative">
+<input class="w-full bg-slate-800 border-none rounded-xl py-3 px-4 text-sm focus:ring-1 focus:ring-primary focus:bg-slate-700 transition-all placeholder-slate-500" placeholder="Type a message..." type="text"/>
+<button class="absolute right-3 top-2.5 text-slate-400 hover:text-primary">
+<span class="material-symbols-outlined">mood</span>
+</button>
+</div>
+<button class="size-11 bg-primary text-slate-900 rounded-xl flex items-center justify-center hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined font-bold">send</span>
+</button>
+</div>
+</div>
+</main>
+</div>
+</body></html>
