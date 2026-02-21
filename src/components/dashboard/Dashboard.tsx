@@ -60,10 +60,21 @@ export function Dashboard() {
     };
   }, [isLoaded, isSignedIn, upsertCurrentUser, upsertPayload]);
 
-  const effectiveSelectedConversationId =
-    selectedConversationId && sidebarUsers?.some((entry) => entry.id === selectedConversationId)
-      ? selectedConversationId
-      : sidebarUsers?.[0]?.id;
+  const effectiveSelectedConversationId = useMemo(() => {
+    if (!sidebarUsers?.length) {
+      return undefined;
+    }
+
+    if (selectedConversationId && sidebarUsers.some((entry) => entry.id === selectedConversationId)) {
+      return selectedConversationId;
+    }
+
+    const firstNonPending = sidebarUsers.find(
+      (entry) => !entry.conversationId.startsWith("direct-pending::"),
+    );
+
+    return firstNonPending?.id;
+  }, [selectedConversationId, sidebarUsers]);
 
   const selectedUser = useMemo(
     () => sidebarUsers?.find((entry) => entry.id === effectiveSelectedConversationId),

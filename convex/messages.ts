@@ -49,7 +49,7 @@ export const list = query({
       .unique();
 
     if (!membership) {
-      throw new Error("Forbidden");
+      return [];
     }
 
     return await ctx.db
