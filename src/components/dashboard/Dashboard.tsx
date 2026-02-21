@@ -22,6 +22,7 @@ export function Dashboard() {
   const [directorySearchTerm, setDirectorySearchTerm] = useState("");
   const [selectedConversationId, setSelectedConversationId] = useState<string>();
   const [viewMode, setViewMode] = useState<ViewMode>("messages");
+  const [mobileActivePane, setMobileActivePane] = useState<"list" | "chat">("list");
 
   const sidebarUsers = useQuery(anyApi.users.listForSidebar, {
     search: conversationSearchTerm,
@@ -80,6 +81,7 @@ export function Dashboard() {
     setSelectedConversationId(conversationId);
     setConversationSearchTerm("");
     setViewMode("messages");
+    setMobileActivePane("chat");
   };
 
   const handleSelectFromSidebar = (conversationId: string) => {
@@ -100,6 +102,7 @@ export function Dashboard() {
       }
 
       setViewMode("messages");
+      setMobileActivePane("chat");
     })();
   };
 
@@ -111,37 +114,50 @@ export function Dashboard() {
     setSelectedConversationId(conversationId);
     setConversationSearchTerm("");
     setViewMode("messages");
+    setMobileActivePane("chat");
   };
 
   const handleSelectNav = (navId: string) => {
     if (navId === "contacts") {
       setViewMode("contacts");
+      setMobileActivePane("list");
       return;
     }
 
     if (navId === "messages") {
       setViewMode("messages");
+      setMobileActivePane("list");
     }
   };
 
   const showFindUsers = viewMode === "contacts";
 
   return (
-    <div className="flex h-screen min-h-0 flex-col overflow-hidden bg-slate-900 text-slate-100 md:flex-row">
+    <div className="flex h-screen min-h-0 flex-col overflow-hidden bg-slate-900 pb-16 text-slate-100 md:flex-row md:pb-0">
       <LeftRail
         user={dashboardUser}
         activeNav={viewMode === "contacts" ? "contacts" : "messages"}
         onSelectNav={handleSelectNav}
       />
-      <ConversationSidebar
-        user={dashboardUser}
-        users={sidebarUsers ?? []}
-        isLoading={!sidebarUsers}
-        searchTerm={conversationSearchTerm}
-        selectedUserId={effectiveSelectedConversationId}
-        onSearchTermChange={setConversationSearchTerm}
-        onSelectUser={handleSelectFromSidebar}
-      />
+      <div
+        className={
+          showFindUsers
+            ? "hidden md:block md:min-h-0 md:w-80 md:flex-none"
+            : mobileActivePane === "chat"
+              ? "hidden md:block md:min-h-0 md:w-80 md:flex-none"
+              : "flex min-h-0 flex-1 md:block md:min-h-0 md:w-80 md:flex-none"
+        }
+      >
+        <ConversationSidebar
+          user={dashboardUser}
+          users={sidebarUsers ?? []}
+          isLoading={!sidebarUsers}
+          searchTerm={conversationSearchTerm}
+          selectedUserId={effectiveSelectedConversationId}
+          onSearchTermChange={setConversationSearchTerm}
+          onSelectUser={handleSelectFromSidebar}
+        />
+      </div>
       {showFindUsers ? (
         <FindUsersScreen
           users={directoryUsers ?? []}
@@ -152,11 +168,14 @@ export function Dashboard() {
           onCreateGroup={handleCreateGroup}
         />
       ) : (
-        <ChatWindow
-          currentUserId={user?.id}
-          selectedUser={selectedUser}
-          conversationId={selectedUser?.conversationId}
-        />
+        <div className={mobileActivePane === "chat" ? "flex min-h-0 flex-1" : "hidden min-h-0 flex-1 md:flex"}>
+          <ChatWindow
+            currentUserId={user?.id}
+            selectedUser={selectedUser}
+            conversationId={selectedUser?.conversationId}
+            onBackToList={() => setMobileActivePane("list")}
+          />
+        </div>
       )}
     </div>
   );

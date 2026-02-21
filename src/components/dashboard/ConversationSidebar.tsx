@@ -36,7 +36,7 @@ export function ConversationSidebar({
   onSelectUser,
 }: ConversationSidebarProps) {
   return (
-    <section className="flex max-h-80 w-full shrink-0 flex-col border-b border-slate-800 bg-slate-800 md:max-h-none md:w-80 md:border-b-0 md:border-r">
+    <section className="flex h-full min-h-0 w-full flex-col border-b border-slate-800 bg-slate-800 md:w-80 md:border-b-0 md:border-r">
       <div className="border-b border-slate-700 p-4">
         <h1 className="mb-4 text-xl font-bold text-white">Messages</h1>
 
