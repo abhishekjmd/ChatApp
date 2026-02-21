@@ -98,7 +98,12 @@ export function ConversationSidebar({
 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
-                    <h3 className="truncate text-sm font-semibold text-slate-100">{conversationUser.name}</h3>
+                    <div className="min-w-0">
+                      <h3 className="truncate text-sm font-semibold text-slate-100">{conversationUser.name}</h3>
+                      {conversationUser.conversationType === "group" ? (
+                        <p className="text-[10px] text-slate-500">{conversationUser.memberCount} members</p>
+                      ) : null}
+                    </div>
                     <span
                       className={
                         conversationUser.unreadCount

@@ -16,14 +16,14 @@ export function ChatWindow({ currentUserId, selectedUser, conversationId }: Chat
       <MessageList
         key={conversationId ?? "no-conversation"}
         currentUserId={currentUserId}
-        selectedUserId={selectedUser?.id}
+        selectedPeerUserId={selectedUser?.otherUserId}
         selectedUserName={selectedUser?.name}
         selectedUserAvatar={selectedUser?.avatar}
+        isGroupConversation={selectedUser?.conversationType === "group"}
         conversationId={conversationId}
       />
       <ChatComposer
         conversationId={conversationId}
-        recipientId={selectedUser?.id}
         disabled={!selectedUser || !conversationId}
       />
     </main>

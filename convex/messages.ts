@@ -35,13 +35,28 @@ export const list = query({
     conversationId: v.string(),
   },
   handler: async (ctx, args) => {
-    const messages = await ctx.db
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Unauthorized");
+    }
+
+    const membership = await ctx.db
+      .query("conversationMembers")
+      .withIndex("by_conversation_user", (q) =>
+        q.eq("conversationId", args.conversationId).eq("userId", identity.subject),
+      )
+      .unique();
+
+    if (!membership) {
+      throw new Error("Forbidden");
+    }
+
+    return await ctx.db
       .query("messages")
       .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
       .order("asc")
       .collect();
-
-    return messages;
   },
 });
 
@@ -49,13 +64,23 @@ export const send = mutation({
   args: {
     body: v.string(),
     conversationId: v.string(),
-    recipientId: v.string(),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
       throw new Error("Unauthorized");
+    }
+
+    const membership = await ctx.db
+      .query("conversationMembers")
+      .withIndex("by_conversation_user", (q) =>
+        q.eq("conversationId", args.conversationId).eq("userId", identity.subject),
+      )
+      .unique();
+
+    if (!membership) {
+      throw new Error("Forbidden");
     }
 
     const trimmedBody = args.body.trim();
@@ -90,7 +115,7 @@ export const send = mutation({
       senderId: identity.subject,
       senderName,
       senderAvatar,
-      recipientId: args.recipientId,
+      recipientId: undefined,
       conversationId: args.conversationId,
       readBy: [identity.subject],
       reactions: [],
@@ -194,6 +219,17 @@ export const toggleReaction = mutation({
       throw new Error("Message not found");
     }
 
+    const membership = await ctx.db
+      .query("conversationMembers")
+      .withIndex("by_conversation_user", (q) =>
+        q.eq("conversationId", message.conversationId).eq("userId", identity.subject),
+      )
+      .unique();
+
+    if (!membership) {
+      throw new Error("Forbidden");
+    }
+
     if (message.deletedAt) {
       throw new Error("Cannot react to deleted messages");
     }
@@ -227,6 +263,17 @@ export const markAsRead = mutation({
       throw new Error("Unauthorized");
     }
 
+    const membership = await ctx.db
+      .query("conversationMembers")
+      .withIndex("by_conversation_user", (q) =>
+        q.eq("conversationId", args.conversationId).eq("userId", identity.subject),
+      )
+      .unique();
+
+    if (!membership) {
+      throw new Error("Forbidden");
+    }
+
     const messages = await ctx.db
       .query("messages")
       .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
@@ -235,7 +282,7 @@ export const markAsRead = mutation({
     let patched = 0;
 
     for (const message of messages) {
-      if (message.recipientId !== identity.subject) {
+      if (message.senderId === identity.subject) {
         continue;
       }
 

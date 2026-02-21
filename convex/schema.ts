@@ -2,6 +2,23 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+  conversations: defineTable({
+    type: v.union(v.literal("direct"), v.literal("group")),
+    name: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+    createdBy: v.string(),
+    createdAt: v.number(),
+  }),
+
+  conversationMembers: defineTable({
+    conversationId: v.string(),
+    userId: v.string(),
+    joinedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_conversation", ["conversationId"])
+    .index("by_conversation_user", ["conversationId", "userId"]),
+
   users: defineTable({
     clerkId: v.string(),
     name: v.string(),
@@ -15,7 +32,7 @@ export default defineSchema({
     senderId: v.string(),
     senderName: v.string(),
     senderAvatar: v.optional(v.string()),
-    recipientId: v.string(),
+    recipientId: v.optional(v.string()),
     conversationId: v.string(),
     readBy: v.array(v.string()),
     deletedAt: v.optional(v.number()),

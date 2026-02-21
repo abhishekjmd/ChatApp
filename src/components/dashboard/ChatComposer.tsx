@@ -7,18 +7,16 @@ import { SymbolIcon } from "./SymbolIcon";
 
 type ChatComposerProps = {
   conversationId?: string;
-  recipientId?: string;
   disabled?: boolean;
 };
 
-export function ChatComposer({ conversationId, recipientId, disabled }: ChatComposerProps) {
+export function ChatComposer({ conversationId, disabled }: ChatComposerProps) {
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string>();
   const [failedPayload, setFailedPayload] = useState<{
     body: string;
     conversationId: string;
-    recipientId: string;
   }>();
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -44,7 +42,7 @@ export function ChatComposer({ conversationId, recipientId, disabled }: ChatComp
     event.preventDefault();
 
     const trimmed = message.trim();
-    if (!trimmed || !conversationId || !recipientId || disabled) {
+    if (!trimmed || !conversationId || disabled) {
       return;
     }
 
@@ -54,7 +52,6 @@ export function ChatComposer({ conversationId, recipientId, disabled }: ChatComp
       const payload = {
         body: trimmed,
         conversationId,
-        recipientId,
       };
 
       await sendMessage(payload);
@@ -70,7 +67,6 @@ export function ChatComposer({ conversationId, recipientId, disabled }: ChatComp
       setFailedPayload({
         body: trimmed,
         conversationId,
-        recipientId,
       });
     } finally {
       setIsSending(false);

@@ -28,6 +28,9 @@ export type SidebarUser = {
   email: string;
   avatar: string;
   conversationId: string;
+  conversationType: "direct" | "group";
+  memberCount: number;
+  otherUserId?: string;
   lastMessagePreview: string;
   lastMessageTime: number;
   unreadCount: number;

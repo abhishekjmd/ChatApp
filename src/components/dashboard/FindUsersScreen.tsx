@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import type { DirectoryUser } from "./types";
 import { SymbolIcon } from "./SymbolIcon";
 
@@ -9,6 +10,7 @@ type FindUsersScreenProps = {
   isLoading?: boolean;
   onSearchTermChange: (value: string) => void;
   onStartChat: (userId: string) => void;
+  onCreateGroup: (groupName: string, memberIds: string[]) => void | Promise<void>;
 };
 
 export function FindUsersScreen({
@@ -17,10 +19,87 @@ export function FindUsersScreen({
   isLoading,
   onSearchTermChange,
   onStartChat,
+  onCreateGroup,
 }: FindUsersScreenProps) {
+  const [groupName, setGroupName] = useState("");
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+
+  const groupCandidates = useMemo(
+    () => users.filter((entry) => !entry.isCurrentUser),
+    [users],
+  );
+
+  const toggleMember = (memberId: string) => {
+    setSelectedMemberIds((current) =>
+      current.includes(memberId)
+        ? current.filter((entry) => entry !== memberId)
+        : [...current, memberId],
+    );
+  };
+
+  const canCreateGroup = groupName.trim().length > 0 && selectedMemberIds.length >= 2;
+
+  const handleCreateGroup = async () => {
+    if (!canCreateGroup || isCreatingGroup) {
+      return;
+    }
+
+    try {
+      setIsCreatingGroup(true);
+      await onCreateGroup(groupName.trim(), selectedMemberIds);
+      setGroupName("");
+      setSelectedMemberIds([]);
+    } finally {
+      setIsCreatingGroup(false);
+    }
+  };
+
   return (
     <section className="custom-scrollbar min-h-0 flex-1 overflow-y-auto bg-slate-900">
       <div className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6 md:py-8 lg:px-10">
+        <div className="mb-6 rounded-xl border border-slate-800 bg-slate-800/70 p-4">
+          <h2 className="text-sm font-semibold text-white">Create Group</h2>
+          <p className="mt-1 text-xs text-slate-400">Pick at least 2 members and a group name.</p>
+          <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-start">
+            <input
+              type="text"
+              value={groupName}
+              onChange={(event) => setGroupName(event.target.value)}
+              placeholder="Group name"
+              className="h-10 w-full rounded-lg border-none bg-slate-900 px-3 text-sm text-slate-100 placeholder:text-slate-500 focus:ring-1 focus:ring-emerald-500 lg:w-72"
+            />
+            <div className="flex-1">
+              <div className="flex flex-wrap gap-2">
+                {groupCandidates.map((candidate) => (
+                  <button
+                    key={candidate.id}
+                    type="button"
+                    onClick={() => toggleMember(candidate.id)}
+                    className={
+                      selectedMemberIds.includes(candidate.id)
+                        ? "rounded-full border border-emerald-400/70 bg-emerald-500/15 px-3 py-1 text-xs text-emerald-200"
+                        : "rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs text-slate-300 hover:border-slate-500"
+                    }
+                  >
+                    {candidate.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                void handleCreateGroup();
+              }}
+              disabled={!canCreateGroup || isCreatingGroup}
+              className="h-10 rounded-lg bg-emerald-500 px-4 text-sm font-semibold text-slate-900 transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isCreatingGroup ? "Creating..." : "Create group"}
+            </button>
+          </div>
+        </div>
+
         <div className="mb-8 flex flex-col items-center text-center">
           <h1 className="mb-2 text-2xl font-bold text-white md:text-3xl">Discover People</h1>
           <p className="mb-6 text-sm text-slate-400">Browse and search all registered users in real time</p>

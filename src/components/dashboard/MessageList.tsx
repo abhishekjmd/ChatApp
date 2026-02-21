@@ -7,9 +7,10 @@ import { SymbolIcon } from "./SymbolIcon";
 
 type MessageListProps = {
   currentUserId?: string;
-  selectedUserId?: string;
+  selectedPeerUserId?: string;
   selectedUserName?: string;
   selectedUserAvatar?: string;
+  isGroupConversation?: boolean;
   conversationId?: string;
 };
 
@@ -20,7 +21,7 @@ type ConvexMessage = {
   senderId: string;
   senderName: string;
   senderAvatar?: string;
-  recipientId: string;
+  recipientId?: string;
   readBy: string[];
   deletedAt?: number;
   deletedBy?: string;
@@ -62,9 +63,10 @@ function getReactionSummary(
 
 export function MessageList({
   currentUserId,
-  selectedUserId,
+  selectedPeerUserId,
   selectedUserName,
   selectedUserAvatar,
+  isGroupConversation,
   conversationId,
 }: MessageListProps) {
   const listRef = useRef<HTMLDivElement | null>(null);
@@ -193,10 +195,10 @@ export function MessageList({
     }
   };
 
-  if (!selectedUserId || !conversationId) {
+  if (!conversationId) {
     return (
       <div className="flex flex-1 items-center justify-center p-6 text-sm text-slate-400">
-        Select a user to start a 1-on-1 chat.
+        Select a conversation to start chatting.
       </div>
     );
   }
@@ -229,18 +231,21 @@ export function MessageList({
           messages.map((message) => {
           const isOwnMessage = Boolean(currentUserId) && message.senderId === currentUserId;
           const isSeenByRecipient =
-            isOwnMessage && Boolean(selectedUserId) && message.readBy.includes(selectedUserId);
+            isOwnMessage &&
+            (selectedPeerUserId ? message.readBy.includes(selectedPeerUserId) : false);
           const isDeleted = Boolean(message.deletedAt);
           const reactions = message.reactions ?? [];
           const reactionSummary = getReactionSummary(reactions, currentUserId);
           const hasAnyReaction = reactions.length > 0;
 
           if (!isOwnMessage) {
-            const incomingDisplayName = selectedUserName ?? message.senderName;
+            const incomingDisplayName = isGroupConversation
+              ? message.senderName
+              : (selectedUserName ?? message.senderName);
             const incomingAvatar =
-              selectedUserAvatar ??
+              (isGroupConversation ? undefined : selectedUserAvatar) ??
               message.senderAvatar ??
-              "https://api.dicebear.com/9.x/initials/svg?seed=User";
+              `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(incomingDisplayName)}`;
 
             return (
               <div key={message._id} className="flex max-w-[85%] gap-3 md:max-w-[80%]">
@@ -419,10 +424,12 @@ export function MessageList({
               <div className="mr-1 flex items-center gap-1">
                 <span className="text-[10px] text-slate-500">{formatTimestamp(message._creationTime)}</span>
                 {message.editedAt ? <span className="text-[10px] text-slate-500">(edited)</span> : null}
-                <SymbolIcon
-                  name="doneAll"
-                  className={isSeenByRecipient ? "h-3.5 w-3.5 text-emerald-500" : "h-3.5 w-3.5 text-slate-500"}
-                />
+                {selectedPeerUserId ? (
+                  <SymbolIcon
+                    name="doneAll"
+                    className={isSeenByRecipient ? "h-3.5 w-3.5 text-emerald-500" : "h-3.5 w-3.5 text-slate-500"}
+                  />
+                ) : null}
               </div>
             </div>
           );

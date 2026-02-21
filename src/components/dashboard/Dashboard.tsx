@@ -20,7 +20,7 @@ export function Dashboard() {
   const { isLoaded, isSignedIn } = useAuth();
   const [conversationSearchTerm, setConversationSearchTerm] = useState("");
   const [directorySearchTerm, setDirectorySearchTerm] = useState("");
-  const [selectedUserId, setSelectedUserId] = useState<string>();
+  const [selectedConversationId, setSelectedConversationId] = useState<string>();
   const [viewMode, setViewMode] = useState<ViewMode>("messages");
 
   const sidebarUsers = useQuery(anyApi.users.listForSidebar, {
@@ -32,6 +32,8 @@ export function Dashboard() {
   }) as DirectoryUser[] | undefined;
 
   const upsertCurrentUser = useMutation(anyApi.users.upsertCurrent);
+  const ensureDirectConversation = useMutation(anyApi.conversations.ensureDirect);
+  const createGroupConversation = useMutation(anyApi.conversations.createGroup);
   const upsertPayload = useMemo(
     () => ({
       name: user?.fullName ?? user?.firstName ?? undefined,
@@ -57,14 +59,14 @@ export function Dashboard() {
     };
   }, [isLoaded, isSignedIn, upsertCurrentUser, upsertPayload]);
 
-  const effectiveSelectedUserId =
-    selectedUserId && sidebarUsers?.some((entry) => entry.id === selectedUserId)
-      ? selectedUserId
+  const effectiveSelectedConversationId =
+    selectedConversationId && sidebarUsers?.some((entry) => entry.id === selectedConversationId)
+      ? selectedConversationId
       : sidebarUsers?.[0]?.id;
 
   const selectedUser = useMemo(
-    () => sidebarUsers?.find((entry) => entry.id === effectiveSelectedUserId),
-    [effectiveSelectedUserId, sidebarUsers],
+    () => sidebarUsers?.find((entry) => entry.id === effectiveSelectedConversationId),
+    [effectiveSelectedConversationId, sidebarUsers],
   );
 
   const dashboardUser = {
@@ -73,14 +75,41 @@ export function Dashboard() {
     imageUrl: user?.imageUrl ?? FALLBACK_AVATAR,
   };
 
-  const handleStartChat = (userId: string) => {
-    setSelectedUserId(userId);
+  const handleStartChat = async (userId: string) => {
+    const conversationId = await ensureDirectConversation({ otherUserId: userId });
+    setSelectedConversationId(conversationId);
     setConversationSearchTerm("");
     setViewMode("messages");
   };
 
-  const handleSelectFromSidebar = (userId: string) => {
-    setSelectedUserId(userId);
+  const handleSelectFromSidebar = (conversationId: string) => {
+    void (async () => {
+      const selectedEntry = sidebarUsers?.find((entry) => entry.id === conversationId);
+
+      if (
+        selectedEntry?.conversationType === "direct" &&
+        selectedEntry.otherUserId &&
+        selectedEntry.conversationId.startsWith("direct-pending::")
+      ) {
+        const ensuredConversationId = await ensureDirectConversation({
+          otherUserId: selectedEntry.otherUserId,
+        });
+        setSelectedConversationId(ensuredConversationId);
+      } else {
+        setSelectedConversationId(conversationId);
+      }
+
+      setViewMode("messages");
+    })();
+  };
+
+  const handleCreateGroup = async (groupName: string, memberIds: string[]) => {
+    const conversationId = await createGroupConversation({
+      name: groupName,
+      memberIds,
+    });
+    setSelectedConversationId(conversationId);
+    setConversationSearchTerm("");
     setViewMode("messages");
   };
 
@@ -109,7 +138,7 @@ export function Dashboard() {
         users={sidebarUsers ?? []}
         isLoading={!sidebarUsers}
         searchTerm={conversationSearchTerm}
-        selectedUserId={effectiveSelectedUserId}
+        selectedUserId={effectiveSelectedConversationId}
         onSearchTermChange={setConversationSearchTerm}
         onSelectUser={handleSelectFromSidebar}
       />
@@ -120,6 +149,7 @@ export function Dashboard() {
           searchTerm={directorySearchTerm}
           onSearchTermChange={setDirectorySearchTerm}
           onStartChat={handleStartChat}
+          onCreateGroup={handleCreateGroup}
         />
       ) : (
         <ChatWindow

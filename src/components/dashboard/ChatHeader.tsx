@@ -24,7 +24,9 @@ export function ChatHeader({ selectedUser, conversationId }: ChatHeaderProps) {
   const statusText = selectedUser
     ? typingUsers?.length
       ? `${typingUsers[0].userName} is typing...`
-      : selectedUser.isOnline
+      : selectedUser.conversationType === "group"
+        ? `${selectedUser.memberCount} members`
+        : selectedUser.isOnline
         ? "Online"
         : "Offline"
     : "Select a user to start chatting";

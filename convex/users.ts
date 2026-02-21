@@ -1,11 +1,8 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 
 const ONLINE_WINDOW_MS = 35_000;
-
-function createConversationId(firstUserId: string, secondUserId: string) {
-  return [firstUserId, secondUserId].sort().join("::");
-}
 
 function nonEmptyString(value: unknown): string | undefined {
   if (typeof value !== "string") {
@@ -139,82 +136,138 @@ export const listForSidebar = query({
     const currentUserId = identity.subject;
     const now = Date.now();
     const searchTerm = (args.search ?? "").trim().toLowerCase();
+    const users = await ctx.db.query("users").collect();
+    const userById = new Map(users.map((user) => [user.clerkId, user]));
 
-    const allUsers = await ctx.db.query("users").collect();
-    const otherUsers = allUsers.filter((user) => user.clerkId !== currentUserId);
-
-    const sentMessages = await ctx.db
-      .query("messages")
-      .withIndex("by_sender", (q) => q.eq("senderId", currentUserId))
+    const memberships = await ctx.db
+      .query("conversationMembers")
+      .withIndex("by_user", (q) => q.eq("userId", currentUserId))
       .collect();
 
-    const receivedMessages = await ctx.db
-      .query("messages")
-      .withIndex("by_recipient", (q) => q.eq("recipientId", currentUserId))
-      .collect();
-
-    const conversationStats = new Map<
-      string,
-      {
-        lastMessagePreview: string;
-        lastMessageTime: number;
-        unreadCount: number;
-      }
-    >();
-
-    for (const message of [...sentMessages, ...receivedMessages]) {
-      const otherUserId =
-        message.senderId === currentUserId ? message.recipientId : message.senderId;
-
-      const currentStats = conversationStats.get(otherUserId) ?? {
-        lastMessagePreview: "",
-        lastMessageTime: 0,
-        unreadCount: 0,
-      };
-
-      if (message._creationTime >= currentStats.lastMessageTime) {
-        currentStats.lastMessagePreview = message.body;
-        currentStats.lastMessageTime = message._creationTime;
-      }
-
-      if (
-        message.senderId === otherUserId &&
-        message.recipientId === currentUserId &&
-        !message.readBy.includes(currentUserId)
-      ) {
-        currentStats.unreadCount += 1;
-      }
-
-      conversationStats.set(otherUserId, currentStats);
-    }
-
-    const usersWithMeta = otherUsers
-      .filter((user) => {
-        if (!searchTerm) {
-          return true;
+    const sidebarItems = await Promise.all(
+      memberships.map(async (membership) => {
+        const conversation = await ctx.db.get(membership.conversationId as Id<"conversations">);
+        if (!conversation) {
+          return null;
         }
 
-        return (
-          user.name.toLowerCase().includes(searchTerm) ||
-          (user.email ?? "").toLowerCase().includes(searchTerm)
-        );
-      })
-      .map((user) => {
-        const stats = conversationStats.get(user.clerkId);
-        const avatar = buildAvatarUrl(user.imageUrl, user.name, user.email);
+        const members = await ctx.db
+          .query("conversationMembers")
+          .withIndex("by_conversation", (q) => q.eq("conversationId", membership.conversationId))
+          .collect();
+
+        const messages = await ctx.db
+          .query("messages")
+          .withIndex("by_conversation", (q) => q.eq("conversationId", membership.conversationId))
+          .collect();
+
+        let lastMessagePreview = "No messages yet";
+        let lastMessageTime = 0;
+        let unreadCount = 0;
+
+        for (const message of messages) {
+          if (message._creationTime >= lastMessageTime) {
+            lastMessageTime = message._creationTime;
+            lastMessagePreview = message.deletedAt ? "This message was deleted" : message.body;
+          }
+
+          if (message.senderId !== currentUserId && !message.readBy.includes(currentUserId)) {
+            unreadCount += 1;
+          }
+        }
+
+        if (conversation.type === "group") {
+          const groupName = nonEmptyString(conversation.name) ?? "Untitled Group";
+          const groupAvatar = buildAvatarUrl(conversation.imageUrl, groupName);
+          const searchable = `${groupName}`.toLowerCase();
+
+          if (searchTerm && !searchable.includes(searchTerm)) {
+            return null;
+          }
+
+          return {
+            id: membership.conversationId,
+            name: groupName,
+            email: "",
+            avatar: groupAvatar,
+            conversationId: membership.conversationId,
+            conversationType: "group" as const,
+            memberCount: members.length,
+            otherUserId: undefined,
+            lastMessagePreview,
+            lastMessageTime,
+            unreadCount,
+            isOnline: false,
+          };
+        }
+
+        const otherMember = members.find((member) => member.userId !== currentUserId);
+        if (!otherMember) {
+          return null;
+        }
+
+        const otherUser = userById.get(otherMember.userId);
+        const directName = otherUser?.name ?? "Unknown User";
+        const directEmail = otherUser?.email ?? "";
+        const searchable = `${directName} ${directEmail}`.toLowerCase();
+
+        if (searchTerm && !searchable.includes(searchTerm)) {
+          return null;
+        }
 
         return {
-          id: user.clerkId,
-          name: user.name,
-          email: user.email ?? "",
-          avatar,
-          conversationId: createConversationId(currentUserId, user.clerkId),
-          lastMessagePreview: stats?.lastMessagePreview ?? "No messages yet",
-          lastMessageTime: stats?.lastMessageTime ?? 0,
-          unreadCount: stats?.unreadCount ?? 0,
-          isOnline: now - user.lastSeen < ONLINE_WINDOW_MS,
+          id: membership.conversationId,
+          name: directName,
+          email: directEmail,
+          avatar: buildAvatarUrl(otherUser?.imageUrl, directName, directEmail),
+          conversationId: membership.conversationId,
+          conversationType: "direct" as const,
+          memberCount: members.length,
+          otherUserId: otherMember.userId,
+          lastMessagePreview,
+          lastMessageTime,
+          unreadCount,
+          isOnline: typeof otherUser?.lastSeen === "number" && now - otherUser.lastSeen < ONLINE_WINDOW_MS,
         };
-      })
+      }),
+    );
+
+    return sidebarItems
+      .filter((item): item is NonNullable<typeof item> => Boolean(item))
+      .concat(
+        users
+          .filter((user) => user.clerkId !== currentUserId)
+          .filter((user) =>
+            !sidebarItems.some(
+              (item) => item && item.conversationType === "direct" && item.otherUserId === user.clerkId,
+            ),
+          )
+          .map((user) => {
+            const directName = user.name;
+            const directEmail = user.email ?? "";
+            const searchable = `${directName} ${directEmail}`.toLowerCase();
+
+            if (searchTerm && !searchable.includes(searchTerm)) {
+              return null;
+            }
+
+            return {
+              id: `direct-pending::${user.clerkId}`,
+              name: directName,
+              email: directEmail,
+              avatar: buildAvatarUrl(user.imageUrl, directName, directEmail),
+              conversationId: `direct-pending::${user.clerkId}`,
+              conversationType: "direct" as const,
+              memberCount: 2,
+              otherUserId: user.clerkId,
+              lastMessagePreview: "Start a conversation",
+              lastMessageTime: 0,
+              unreadCount: 0,
+              isOnline: now - user.lastSeen < ONLINE_WINDOW_MS,
+            };
+          })
+          .filter((item): item is NonNullable<typeof item> => Boolean(item)),
+      )
       .sort((a, b) => {
         if (b.lastMessageTime !== a.lastMessageTime) {
           return b.lastMessageTime - a.lastMessageTime;
@@ -222,8 +275,6 @@ export const listForSidebar = query({
 
         return a.name.localeCompare(b.name);
       });
-
-    return usersWithMeta;
   },
 });
 
@@ -266,9 +317,7 @@ export const browseDirectory = query({
           avatar,
           isCurrentUser,
           isOnline: now - user.lastSeen < ONLINE_WINDOW_MS,
-          conversationId: isCurrentUser
-            ? undefined
-            : createConversationId(currentUserId, user.clerkId),
+          conversationId: undefined,
         };
       })
       .sort((a, b) => {
