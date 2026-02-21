@@ -24,6 +24,7 @@ type ConvexMessage = {
   readBy: string[];
   deletedAt?: number;
   deletedBy?: string;
+  editedAt?: number;
   reactions?: {
     emoji: string;
     userId: string;
@@ -71,6 +72,9 @@ export function MessageList({
   const wasNearBottomRef = useRef(true);
   const [showNewMessagesButton, setShowNewMessagesButton] = useState(false);
   const [messageActionError, setMessageActionError] = useState<string>();
+  const [openMenuMessageId, setOpenMenuMessageId] = useState<string>();
+  const [editingMessageId, setEditingMessageId] = useState<string>();
+  const [editingBody, setEditingBody] = useState("");
 
   const messages = useQuery(
     anyApi.messages.list,
@@ -79,6 +83,7 @@ export function MessageList({
 
   const markAsRead = useMutation(anyApi.messages.markAsRead);
   const deleteOwnMessage = useMutation(anyApi.messages.deleteOwn);
+  const editOwnMessage = useMutation(anyApi.messages.editOwn);
   const toggleReaction = useMutation(anyApi.messages.toggleReaction);
 
   const isLoading = Boolean(conversationId) && messages === undefined;
@@ -145,8 +150,37 @@ export function MessageList({
     try {
       setMessageActionError(undefined);
       await deleteOwnMessage({ messageId: messageId as never });
+      setOpenMenuMessageId(undefined);
     } catch {
       setMessageActionError("Couldn't delete the message. Please try again.");
+    }
+  };
+
+  const handleStartEdit = (message: ConvexMessage) => {
+    setOpenMenuMessageId(undefined);
+    setEditingMessageId(message._id);
+    setEditingBody(message.body);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(undefined);
+    setEditingBody("");
+  };
+
+  const handleSaveEdit = async (messageId: string) => {
+    const trimmed = editingBody.trim();
+    if (!trimmed) {
+      setMessageActionError("Message can't be empty.");
+      return;
+    }
+
+    try {
+      setMessageActionError(undefined);
+      await editOwnMessage({ messageId: messageId as never, body: trimmed });
+      setEditingMessageId(undefined);
+      setEditingBody("");
+    } catch {
+      setMessageActionError("Couldn't edit the message. Please try again.");
     }
   };
 
@@ -272,16 +306,41 @@ export function MessageList({
               key={message._id}
               className="ml-auto flex max-w-[85%] flex-col items-end gap-1 md:max-w-[80%]"
             >
-              {!isDeleted ? (
-                <button
-                  type="button"
-                  onClick={() => handleDeleteOwnMessage(message._id)}
-                  className="mr-1 text-[10px] text-slate-500 transition-colors hover:text-rose-300"
-                >
-                  Delete
-                </button>
-              ) : null}
-              <div className="group/msgbubble w-fit">
+              <div className="group/msgbubble relative w-fit">
+                {!isDeleted && editingMessageId !== message._id ? (
+                  <div className="absolute right-1 top-1 z-20 opacity-0 transition-opacity duration-150 group-hover/msgbubble:opacity-100">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOpenMenuMessageId((current) => (current === message._id ? undefined : message._id));
+                      }}
+                      className="rounded px-1 text-slate-700 transition-colors hover:bg-slate-800/20 hover:text-slate-900"
+                      aria-label="Message actions"
+                    >
+                      ⋮
+                    </button>
+                    {openMenuMessageId === message._id ? (
+                      <div className="absolute right-0 mt-1 w-28 rounded-md border border-slate-700 bg-slate-900 p-1 shadow-lg">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEdit(message)}
+                          className="w-full rounded px-2 py-1 text-left text-xs text-slate-200 hover:bg-slate-800"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void handleDeleteOwnMessage(message._id);
+                          }}
+                          className="w-full rounded px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
                 <div
                   className={
                     isDeleted
@@ -289,9 +348,38 @@ export function MessageList({
                       : "rounded-2xl rounded-br-none bg-emerald-500 p-3 shadow-lg shadow-emerald-500/20"
                   }
                 >
-                  <p className={isDeleted ? "text-sm italic text-slate-300" : "text-sm font-medium text-slate-900"}>
-                    {isDeleted ? "This message was deleted" : message.body}
-                  </p>
+                  {editingMessageId === message._id ? (
+                    <div className="flex flex-col gap-2">
+                      <input
+                        type="text"
+                        value={editingBody}
+                        onChange={(event) => setEditingBody(event.target.value)}
+                        className="w-64 rounded-md border-none bg-slate-100 px-2 py-1 text-sm text-slate-900 focus:ring-1 focus:ring-emerald-600"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={handleCancelEdit}
+                          className="rounded bg-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-800"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void handleSaveEdit(message._id);
+                          }}
+                          className="rounded bg-emerald-700 px-2 py-1 text-[11px] font-semibold text-white"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className={isDeleted ? "text-sm italic text-slate-300" : "text-sm font-medium text-slate-900"}>
+                      {isDeleted ? "This message was deleted" : message.body}
+                    </p>
+                  )}
                 </div>
                 {!isDeleted ? (
                   <div className="mr-1 mt-1 hidden flex-wrap items-center justify-end gap-1 group-hover/msgbubble:flex">
@@ -330,6 +418,7 @@ export function MessageList({
               ) : null}
               <div className="mr-1 flex items-center gap-1">
                 <span className="text-[10px] text-slate-500">{formatTimestamp(message._creationTime)}</span>
+                {message.editedAt ? <span className="text-[10px] text-slate-500">(edited)</span> : null}
                 <SymbolIcon
                   name="doneAll"
                   className={isSeenByRecipient ? "h-3.5 w-3.5 text-emerald-500" : "h-3.5 w-3.5 text-slate-500"}

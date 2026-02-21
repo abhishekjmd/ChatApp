@@ -132,6 +132,46 @@ export const deleteOwn = mutation({
   },
 });
 
+export const editOwn = mutation({
+  args: {
+    messageId: v.id("messages"),
+    body: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Unauthorized");
+    }
+
+    const message = await ctx.db.get(args.messageId);
+
+    if (!message) {
+      throw new Error("Message not found");
+    }
+
+    if (message.senderId !== identity.subject) {
+      throw new Error("Forbidden");
+    }
+
+    if (message.deletedAt) {
+      throw new Error("Cannot edit deleted message");
+    }
+
+    const trimmedBody = args.body.trim();
+    if (!trimmedBody) {
+      throw new Error("Message body is required");
+    }
+
+    await ctx.db.patch(args.messageId, {
+      body: trimmedBody,
+      editedAt: Date.now(),
+    });
+
+    return true;
+  },
+});
+
 export const toggleReaction = mutation({
   args: {
     messageId: v.id("messages"),

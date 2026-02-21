@@ -20,6 +20,7 @@ export default defineSchema({
     readBy: v.array(v.string()),
     deletedAt: v.optional(v.number()),
     deletedBy: v.optional(v.string()),
+    editedAt: v.optional(v.number()),
     reactions: v.optional(
       v.array(
         v.object({
