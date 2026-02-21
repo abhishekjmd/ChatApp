@@ -14,6 +14,7 @@ export function ChatWindow({ currentUserId, selectedUser, conversationId }: Chat
     <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-slate-900">
       <ChatHeader selectedUser={selectedUser} conversationId={conversationId} />
       <MessageList
+        key={conversationId ?? "no-conversation"}
         currentUserId={currentUserId}
         selectedUserId={selectedUser?.id}
         selectedUserName={selectedUser?.name}

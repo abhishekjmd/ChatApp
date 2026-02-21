@@ -8,6 +8,7 @@ type ConversationSidebarProps = {
     imageUrl: string;
   };
   users: SidebarUser[];
+  isLoading?: boolean;
   searchTerm: string;
   selectedUserId?: string;
   onSearchTermChange: (value: string) => void;
@@ -28,6 +29,7 @@ function formatConversationTime(timestamp: number) {
 export function ConversationSidebar({
   user,
   users,
+  isLoading,
   searchTerm,
   selectedUserId,
   onSearchTermChange,
@@ -62,7 +64,13 @@ export function ConversationSidebar({
       </div>
 
       <div className="custom-scrollbar flex-1 overflow-y-auto">
-        {users.length ? (
+        {isLoading ? (
+          <div className="space-y-3 p-4">
+            <div className="h-14 animate-pulse rounded-lg bg-slate-700/60" />
+            <div className="h-14 animate-pulse rounded-lg bg-slate-700/60" />
+            <div className="h-14 animate-pulse rounded-lg bg-slate-700/60" />
+          </div>
+        ) : users.length ? (
           users.map((conversationUser) => {
             const isActive = selectedUserId === conversationUser.id;
 

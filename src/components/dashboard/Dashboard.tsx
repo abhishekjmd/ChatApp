@@ -107,6 +107,7 @@ export function Dashboard() {
       <ConversationSidebar
         user={dashboardUser}
         users={sidebarUsers ?? []}
+        isLoading={!sidebarUsers}
         searchTerm={conversationSearchTerm}
         selectedUserId={effectiveSelectedUserId}
         onSearchTermChange={setConversationSearchTerm}
@@ -115,6 +116,7 @@ export function Dashboard() {
       {showFindUsers ? (
         <FindUsersScreen
           users={directoryUsers ?? []}
+          isLoading={!directoryUsers}
           searchTerm={directorySearchTerm}
           onSearchTermChange={setDirectorySearchTerm}
           onStartChat={handleStartChat}

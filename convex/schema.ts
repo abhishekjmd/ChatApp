@@ -18,6 +18,16 @@ export default defineSchema({
     recipientId: v.string(),
     conversationId: v.string(),
     readBy: v.array(v.string()),
+    deletedAt: v.optional(v.number()),
+    deletedBy: v.optional(v.string()),
+    reactions: v.optional(
+      v.array(
+        v.object({
+          emoji: v.string(),
+          userId: v.string(),
+        }),
+      ),
+    ),
   })
     .index("by_conversation", ["conversationId"])
     .index("by_sender", ["senderId"])

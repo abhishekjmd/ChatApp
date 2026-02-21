@@ -6,6 +6,7 @@ import { SymbolIcon } from "./SymbolIcon";
 type FindUsersScreenProps = {
   searchTerm: string;
   users: DirectoryUser[];
+  isLoading?: boolean;
   onSearchTermChange: (value: string) => void;
   onStartChat: (userId: string) => void;
 };
@@ -13,6 +14,7 @@ type FindUsersScreenProps = {
 export function FindUsersScreen({
   searchTerm,
   users,
+  isLoading,
   onSearchTermChange,
   onStartChat,
 }: FindUsersScreenProps) {
@@ -37,7 +39,13 @@ export function FindUsersScreen({
           </div>
         </div>
 
-        {users.length ? (
+        {isLoading ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="h-40 animate-pulse rounded-xl bg-slate-800/70" />
+            ))}
+          </div>
+        ) : users.length ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {users.map((directoryUser) => (
               <article

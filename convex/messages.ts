@@ -1,6 +1,8 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+const REACTION_EMOJIS = new Set(["👍", "❤️", "😂", "😮", "😢"]);
+
 function nonEmptyString(value: unknown): string | undefined {
   if (typeof value !== "string") {
     return undefined;
@@ -91,7 +93,86 @@ export const send = mutation({
       recipientId: args.recipientId,
       conversationId: args.conversationId,
       readBy: [identity.subject],
+      reactions: [],
     });
+  },
+});
+
+export const deleteOwn = mutation({
+  args: {
+    messageId: v.id("messages"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Unauthorized");
+    }
+
+    const message = await ctx.db.get(args.messageId);
+
+    if (!message) {
+      throw new Error("Message not found");
+    }
+
+    if (message.senderId !== identity.subject) {
+      throw new Error("Forbidden");
+    }
+
+    if (message.deletedAt) {
+      return false;
+    }
+
+    await ctx.db.patch(args.messageId, {
+      deletedAt: Date.now(),
+      deletedBy: identity.subject,
+    });
+
+    return true;
+  },
+});
+
+export const toggleReaction = mutation({
+  args: {
+    messageId: v.id("messages"),
+    emoji: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Unauthorized");
+    }
+
+    if (!REACTION_EMOJIS.has(args.emoji)) {
+      throw new Error("Unsupported reaction");
+    }
+
+    const message = await ctx.db.get(args.messageId);
+
+    if (!message) {
+      throw new Error("Message not found");
+    }
+
+    if (message.deletedAt) {
+      throw new Error("Cannot react to deleted messages");
+    }
+
+    const currentReactions = message.reactions ?? [];
+    const existingIndex = currentReactions.findIndex(
+      (entry) => entry.emoji === args.emoji && entry.userId === identity.subject,
+    );
+
+    const updatedReactions =
+      existingIndex >= 0
+        ? currentReactions.filter((_, index) => index !== existingIndex)
+        : [...currentReactions, { emoji: args.emoji, userId: identity.subject }];
+
+    await ctx.db.patch(args.messageId, {
+      reactions: updatedReactions,
+    });
+
+    return updatedReactions.length;
   },
 });
 
