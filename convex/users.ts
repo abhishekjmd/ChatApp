@@ -7,21 +7,93 @@ function createConversationId(firstUserId: string, secondUserId: string) {
   return [firstUserId, secondUserId].sort().join("::");
 }
 
+function nonEmptyString(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function nameFromEmail(email?: string) {
+  const safeEmail = nonEmptyString(email);
+  if (!safeEmail) {
+    return undefined;
+  }
+
+  const localPart = safeEmail.split("@")[0];
+  if (!localPart) {
+    return undefined;
+  }
+
+  return localPart
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function resolveDisplayName({
+  clientName,
+  identityName,
+  identityGivenName,
+  identityFamilyName,
+  clientEmail,
+  identityEmail,
+}: {
+  clientName?: string;
+  identityName?: string;
+  identityGivenName?: string;
+  identityFamilyName?: string;
+  clientEmail?: string;
+  identityEmail?: string;
+}) {
+  const directName =
+    nonEmptyString(clientName) ??
+    nonEmptyString(identityName) ??
+    [nonEmptyString(identityGivenName), nonEmptyString(identityFamilyName)]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+
+  if (directName) {
+    return directName;
+  }
+
+  return nameFromEmail(clientEmail) ?? nameFromEmail(identityEmail) ?? "User";
+}
+
+function buildAvatarUrl(imageUrl: string | undefined, name: string, email?: string) {
+  if (imageUrl) {
+    return imageUrl;
+  }
+
+  const seed = encodeURIComponent(name !== "User" ? name : (nameFromEmail(email) ?? "User"));
+  return `https://api.dicebear.com/9.x/initials/svg?seed=${seed}&backgroundColor=10b77f`;
+}
+
 export const upsertCurrent = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    name: v.optional(v.string()),
+    email: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
       throw new Error("Unauthorized");
     }
 
-    const name =
-      typeof identity.name === "string" && identity.name.length > 0
-        ? identity.name
-        : typeof identity.givenName === "string" && identity.givenName.length > 0
-          ? identity.givenName
-          : "User";
+    const name = resolveDisplayName({
+      clientName: args.name,
+      identityName: identity.name,
+      identityGivenName: identity.givenName,
+      identityFamilyName: identity.familyName,
+      clientEmail: args.email,
+      identityEmail: identity.email,
+    });
 
     const existing = await ctx.db
       .query("users")
@@ -30,11 +102,14 @@ export const upsertCurrent = mutation({
 
     const payload = {
       name,
-      email: typeof identity.email === "string" ? identity.email : undefined,
+      email:
+        nonEmptyString(args.email) ??
+        (typeof identity.email === "string" ? identity.email : undefined),
       imageUrl:
-        typeof identity.pictureUrl === "string" && identity.pictureUrl.length > 0
+        nonEmptyString(args.imageUrl) ??
+        (typeof identity.pictureUrl === "string" && identity.pictureUrl.length > 0
           ? identity.pictureUrl
-          : undefined,
+          : undefined),
       lastSeen: Date.now(),
     };
 
@@ -126,14 +201,13 @@ export const listForSidebar = query({
       })
       .map((user) => {
         const stats = conversationStats.get(user.clerkId);
+        const avatar = buildAvatarUrl(user.imageUrl, user.name, user.email);
 
         return {
           id: user.clerkId,
           name: user.name,
           email: user.email ?? "",
-          avatar:
-            user.imageUrl ??
-            "https://api.dicebear.com/9.x/initials/svg?seed=User&backgroundColor=10b77f",
+          avatar,
           conversationId: createConversationId(currentUserId, user.clerkId),
           lastMessagePreview: stats?.lastMessagePreview ?? "No messages yet",
           lastMessageTime: stats?.lastMessageTime ?? 0,
@@ -183,14 +257,13 @@ export const browseDirectory = query({
       })
       .map((user) => {
         const isCurrentUser = user.clerkId === currentUserId;
+        const avatar = buildAvatarUrl(user.imageUrl, user.name, user.email);
 
         return {
           id: user.clerkId,
           name: user.name,
           email: user.email ?? "",
-          avatar:
-            user.imageUrl ??
-            "https://api.dicebear.com/9.x/initials/svg?seed=User&backgroundColor=10b77f",
+          avatar,
           isCurrentUser,
           isOnline: now - user.lastSeen < ONLINE_WINDOW_MS,
           conversationId: isCurrentUser

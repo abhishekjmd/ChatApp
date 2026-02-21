@@ -8,6 +8,8 @@ import { SymbolIcon } from "./SymbolIcon";
 type MessageListProps = {
   currentUserId?: string;
   selectedUserId?: string;
+  selectedUserName?: string;
+  selectedUserAvatar?: string;
   conversationId?: string;
 };
 
@@ -29,7 +31,13 @@ function formatTimestamp(timestamp: number) {
   });
 }
 
-export function MessageList({ currentUserId, selectedUserId, conversationId }: MessageListProps) {
+export function MessageList({
+  currentUserId,
+  selectedUserId,
+  selectedUserName,
+  selectedUserAvatar,
+  conversationId,
+}: MessageListProps) {
   const messages = useQuery(
     anyApi.messages.list,
     conversationId ? { conversationId } : "skip",
@@ -68,20 +76,23 @@ export function MessageList({ currentUserId, selectedUserId, conversationId }: M
             isOwnMessage && Boolean(selectedUserId) && message.readBy.includes(selectedUserId);
 
           if (!isOwnMessage) {
+            const incomingDisplayName = selectedUserName ?? message.senderName;
+            const incomingAvatar =
+              selectedUserAvatar ??
+              message.senderAvatar ??
+              "https://api.dicebear.com/9.x/initials/svg?seed=User";
+
             return (
               <div key={message._id} className="flex max-w-[85%] gap-3 md:max-w-[80%]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={
-                    message.senderAvatar ??
-                    "https://api.dicebear.com/9.x/initials/svg?seed=User"
-                  }
-                  alt={`${message.senderName} avatar`}
+                  src={incomingAvatar}
+                  alt={`${incomingDisplayName} avatar`}
                   className="mt-auto size-8 shrink-0 rounded-full object-cover"
                 />
                 <div className="flex flex-col gap-1">
                   <div className="rounded-2xl rounded-bl-none bg-slate-800 p-3 shadow-sm">
-                    <p className="mb-1 text-xs font-semibold text-emerald-400">{message.senderName}</p>
+                    <p className="mb-1 text-xs font-semibold text-emerald-400">{incomingDisplayName}</p>
                     <p className="text-sm text-white">{message.body}</p>
                   </div>
                   <span className="ml-1 text-[10px] text-slate-500">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
 import { anyApi } from "convex/server";
 import { ChatWindow } from "./ChatWindow";
@@ -17,6 +17,7 @@ type ViewMode = "messages" | "contacts";
 
 export function Dashboard() {
   const { user } = useUser();
+  const { isLoaded, isSignedIn } = useAuth();
   const [conversationSearchTerm, setConversationSearchTerm] = useState("");
   const [directorySearchTerm, setDirectorySearchTerm] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<string>();
@@ -31,18 +32,30 @@ export function Dashboard() {
   }) as DirectoryUser[] | undefined;
 
   const upsertCurrentUser = useMutation(anyApi.users.upsertCurrent);
+  const upsertPayload = useMemo(
+    () => ({
+      name: user?.fullName ?? user?.firstName ?? undefined,
+      email: user?.primaryEmailAddress?.emailAddress ?? undefined,
+      imageUrl: user?.imageUrl ?? undefined,
+    }),
+    [user?.firstName, user?.fullName, user?.imageUrl, user?.primaryEmailAddress?.emailAddress],
+  );
 
   useEffect(() => {
-    void upsertCurrentUser({});
+    if (!isLoaded || !isSignedIn) {
+      return;
+    }
+
+    void upsertCurrentUser(upsertPayload);
 
     const intervalId = setInterval(() => {
-      void upsertCurrentUser({});
+      void upsertCurrentUser(upsertPayload);
     }, 15_000);
 
     return () => {
       clearInterval(intervalId);
     };
-  }, [upsertCurrentUser]);
+  }, [isLoaded, isSignedIn, upsertCurrentUser, upsertPayload]);
 
   const effectiveSelectedUserId =
     selectedUserId && sidebarUsers?.some((entry) => entry.id === selectedUserId)

@@ -1,6 +1,33 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+function nonEmptyString(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function nameFromEmail(email?: string) {
+  const safeEmail = nonEmptyString(email);
+  if (!safeEmail) {
+    return undefined;
+  }
+
+  const localPart = safeEmail.split("@")[0];
+  if (!localPart) {
+    return undefined;
+  }
+
+  return localPart
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 export const list = query({
   args: {
     conversationId: v.string(),
@@ -34,17 +61,27 @@ export const send = mutation({
       throw new Error("Message body is required");
     }
 
+    const senderProfile = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
     const senderName =
-      typeof identity.name === "string" && identity.name.length > 0
-        ? identity.name
-        : typeof identity.givenName === "string" && identity.givenName.length > 0
-          ? identity.givenName
-          : "User";
+      nonEmptyString(senderProfile?.name) ??
+      nonEmptyString(identity.name) ??
+      nonEmptyString(
+        [nonEmptyString(identity.givenName), nonEmptyString(identity.familyName)]
+          .filter(Boolean)
+          .join(" "),
+      ) ??
+      nameFromEmail(nonEmptyString(senderProfile?.email) ?? nonEmptyString(identity.email)) ??
+      "User";
 
     const senderAvatar =
-      typeof identity.pictureUrl === "string" && identity.pictureUrl.length > 0
+      nonEmptyString(senderProfile?.imageUrl) ??
+      (typeof identity.pictureUrl === "string" && identity.pictureUrl.length > 0
         ? identity.pictureUrl
-        : undefined;
+        : undefined);
 
     return await ctx.db.insert("messages", {
       body: trimmedBody,

@@ -16,6 +16,8 @@ export function ChatWindow({ currentUserId, selectedUser, conversationId }: Chat
       <MessageList
         currentUserId={currentUserId}
         selectedUserId={selectedUser?.id}
+        selectedUserName={selectedUser?.name}
+        selectedUserAvatar={selectedUser?.avatar}
         conversationId={conversationId}
       />
       <ChatComposer
